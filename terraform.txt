@@ -3,3 +3,220 @@ IaC
   - enables DevOps - codification of deployment, tracked in version control, visibility, collaboration
   - declarative (but can be procedural)
   - less human intervention - less errors and more secure
+
+Terraform:
+  - automate software defined networking
+  - interacts and takes care of communication with control layer APIs
+  - supports multiple private/public cloud vendors
+  - tracks state of each deployed resource
+
+WRITE CODE (HCL) -> PLAN (REVIEW) -> APPLY
+
+terraform init
+  Initializes the working directory that contains TF code
+  - Downloads ancillary componens (modules/plugins)
+  - Sets up backend (state file)
+
+terraform plan
+  Reads the code and then creates and shows a "plan" of execution/deployment
+  - does not deploy anything. Read-only
+  - allows users to review the action plan before execution
+  - uses authentication credentials
+
+terraform apply
+  Deploys the infrastructure
+  - updates the state file (state tracking mechanism) - terraform.tfstate
+
+terraform destroy
+  Looks at the state file created during deployment and destroys all tracked resources
+  - non-reversible, take backups before using it
+  - destroys stuff in the right sequence
+
+Examples:
+
+provider "aws" {
+    region = "us-east-1"
+}
+
+resource "aws_instance" "web" {
+    ami = "abcdefg"
+    instance_type = "abcefaf"
+}
+Resource address -> aws_instance.web
+
+data "aws_instance" "my-vm" {
+    instance_id = "i-1239214a"
+}
+Data source block fetches and tracks details of an already existing ressource.
+Data address -> data.aws_instance.my-vm
+
+Default TF behaviors:
+- executes code in .tf files
+- initially, looks for providers in the registry, but can also locally
+
+Providers
+- way of abstracting integrations with API control layer of infra vendors
+- by default searches the registry
+- providers are plugins. Released on a separate rhythm, with separate versions
+- pulled with terraform init
+- fix version of providers, so that an update won't break the code
+
+Debug logging command:
+  export TF_LOG=TRACE
+
+Terraform State - Resource tracking:
+- way to keep tabs on what has been destroyed
+- critical to tf's functionality
+- maps configuration to actual resources in cloud
+- json data
+- terraform.tfstate locally
+- can also be remote
+- helps calculate deployment delta and create new deployment plan
+- never lose it
+
+Variables
+
+variable "my-var" {
+    description = "My variable"
+    type = string
+    default = "Hello"
+}
+
+Everything inside is optional (variable "my-var" {})
+
+Reference: var.my-var
+
+Can set pass its value through OS env or CLI input.
+Best practice is to use terraform.tfvars
+
+Variable validation
+
+variable "my-var" {
+    description = "My variable"
+    type = string
+    default = "Hello"
+    validation {
+        condition = length(var.my-var) > 4
+        error_message = "The string must be more than 4 characters"
+    }
+}
+
+If you use validation, tf will stop and not deploy if it's wrong.
+
+Sensitive - don't show vars during execution
+Just add sensitive = true (default false)
+
+Base types:
+- string
+- number
+- boll
+
+Complex types:
+- list
+- set
+- map
+- object
+- tuple
+
+variable "availability_zone_names" {
+    type = list(string)
+    default = ["us-west-1a"]
+}
+
+variable "docker_ports" {
+    type = list(object({
+        internal = number
+        external = number
+        protocol = string
+    }))
+    default = [
+        {
+            internal = 8300
+            external = 8300
+            protocol = "tcp"
+        }
+    ]
+}
+
+Outputs
+
+output "instance_ip" {
+    description = "VM's Private IP"
+    value = aws_instance.my-vm.private_ip
+}
+
+- are shown on the shell after terraform apply
+- are like return values that you want to track after successful terraform deployment
+
+Provisioners:
+  - way of bootstrapping custom scripts, commands or actions
+  - can be run euther locally (the same system where TF commands are being issued from), or remotely on resources spun up through TF deployment
+  - attached to tf resource and allows custom connection parameters
+Within TF code, each individual resource can have its own "provisioner" defining the connection method (eg. SSH/WinRM) and the acions/commands/script to execute.
+2 types:
+  - creation-time
+  - destroy-time
+Best practices and warnings:
+  - use sparingly, if underlying provider doesn't provide such option
+  - cannot track changes to provisioners, they take independent action - break declarative model
+  - recommended only when you want to invoke actions no covered by tf declarative model
+  - non-zero code means failed, taints underlying resource
+
+resouce "null_resource" "dummy_resource" {
+    provisioner "local-exec" {
+        command = "echo '0' > status.txt" (by default, it's a create provisioner)
+    }
+    provisioner "local-exec" {
+        when = destroy
+        command = "echo '1' > status.txt"
+    }
+}
+
+Terraform State
+- maps real-world resources to tf configuration
+- default - locally stored terraform.tfstate
+- can be stored remotely, eg. s3
+- prior to any modification, tf refreshes the satte file
+- resource dependency metadata is also tracked via the state file
+- helps boost deployment performance acting as a cache for resource attributes (less API calls)
+
+terraform state Command
+- utility for manipulating and reading the state file
+Scenarios:
+- advanced state management
+- manually remove a resource from state so tf stops managing it
+- listing out tracked resources and their details (via state and list subcommands)
+
+Common state commands:
+terraform state list - list all resources tracked by state file
+terraform state rm - delete a resource from state file
+terraform state show - show details of a tracked resource
+
+Local State Storage:
+- saves tf state locally on the system
+- default behavior
+- mostly for "personal" use, no cooperation
+
+Remote State Storage:
+- saves state to a remote data source. Eg. AWS S3, Google Storage
+- allows sharing files between distributed teams
+- eg. in S3 you'd use bucket policies for security
+
+State locking - parallel executions don't coincide, enabled by default on apply
+Not supported on all remote storages.
+
+State enables sharing "output" values with other tf config/code
+Eg. Other tf infra references IPs in your remote state
+
+terraform {
+    backend "s3" {
+        region = "us-east-1"
+        key = "terraformstatefile"
+        bucket = "akhdfkjlahf"
+    }
+}
+
+Terraform Modules:
+- container for multiple resources that are used together
+- main purpose - make code reusable elsewhere
+- every terraform 
