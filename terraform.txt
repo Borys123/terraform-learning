@@ -1,0 +1,5 @@
+IaC
+  - writing down what you want to deploy as human readable (usually declarative)
+  - enables DevOps - codification of deployment, tracked in version control, visibility, collaboration
+  - declarative (but can be procedural)
+  - less human intervention - less errors and more secure
