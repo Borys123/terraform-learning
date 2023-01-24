@@ -219,4 +219,161 @@ terraform {
 Terraform Modules:
 - container for multiple resources that are used together
 - main purpose - make code reusable elsewhere
-- every terraform 
+- every terraform configuration has at least one (root) module
+Modules can be downloaded/referenced from:
+- Terraform Public Registry
+- A Private registry
+- Your Local System
+
+module "my-vpc-module" {
+  source = "./modules/vpc"
+  version = "0.0.5"
+  region = var.region
+}
+Also allowed:
+- count
+- for_each
+- providers
+- depends_on
+Consume:
+module.my-vpc-module.subnet_id
+
+Module inputs are arbitrary named parameters that you pass inside the module block
+These inputs can be used as variables inside the module code
+module "my-vpc-module" {
+  source = "./modules/vpc"
+  server-name = 'us-east-1'
+}
+Inside module: var.server-name
+
+Outputs declared in tf module code can be fed back into the root module or main code
+Output invocation convention:
+module.<name-of-module>.<name-of-output>
+
+output "ip-address" {
+  value = aws_instance.private_ip
+}
+module.my-vpc-module.ip_address
+
+Functions - Terraform comes pre-packaged with functions that help transform and combine values
+User-defined functions are not allowed
+Syntax: function_name(arg1, arg2)
+
+Built-in functions:
+
+resource "aws_vpc" "my-vpc" {
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = join("-", ["terraform", var.project-name])
+  }
+}
+
+- file
+- max
+- flatten
+
+Terraform console (interactive cli)
+max(5,3,1,4,5) -> 5
+timestamp() -> UTC timestamp
+join("_", ["acloud","guru"]) -> acloud_guru
+contains(["acloud", "guru", 1, 2, 3], "guru") -> true
+contains(["acloud", "guru", 1, 2, 3], "5") -> false
+
+Terraform Type Constraints (Collections & Structurals)
+- Type constraints control the type of variable values
+
+Primitive - single type value (number, string, bool)
+Complex - multiple types in a single variable (list, tuple, map, object)
+  Collection types allow multiple values of one primitive type to be grouped together list/map/set(type)
+  variable "training" {
+    type = list(string)
+    default = ["ACG", "LA"]
+  }
+  Structural types allow multiple values of different primitive types to be grouped together object/tuple/set(type)
+  variable "instructor" {
+    type = object({
+      name = string
+      age = number
+    })
+  }
+  Any - a placeholder for a primitive type yet to be decided
+  Actual type will be determined at runtime
+  variable "data" {
+    type = list(any)
+    default = [ 1, 42, 7 ]
+  }
+
+Dynamic blocks
+- dynamically constructs repeatable nested configuration blocks inside TF resources
+- support resource, data, provider, provisioner
+- make code look cleaner
+
+resource "aws_security_group" "my-sg" {
+  name = 'my-aws-security-group'
+  vpc_id = aws_vpc.my-vp.id
+  dynamic "ingress" {
+    for_each = var.rules
+    content {
+      from_port = ingress.value["port"]
+      to_port = ingress.value["port"]
+      protocol = ingress.value["proto"]
+      cidr_blocks = ingress.value["cidrs"]
+    }
+  }
+}
+variable "rules" {
+  default = [
+    {
+      port = 80
+      proto = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    },
+    {
+      port = 22
+      proto = "tcp"
+      cidr_blocks = ["1.2.3.4/32"]
+    }
+  ]
+}
+
+Dynamic blocks expect a complex variable type to iterate over
+Act like a for loop and output a nested block for each element in your variable
+- Don't overuse, complex stuff
+- Only use to hide detail to make interface cleaner eg. im reusable modules
+
+Terraform fmt
+- formats code for readability
+- helps keep code consistent
+- safe to run at any time
+
+Terraform taint
+- taints a resource, forcing it to be deleted and recreated
+- modifies the state file, which causes the recreation workflow
+- mind that tainting a resource may cause other resources to be modified
+terraform taint RESOURCE_ADDRESS
+
+Use when:
+- to cause provisioners to run (they only run on create/destroy)
+- replace misbehaving resources forcefully
+- mimic side effects of recreation
+
+Terraform import
+- maps existing resources to Terraform using an ID
+- ID is dependent on the underlying vendor
+- importing the same reosource to multiple Terraform resources can cause unknown behavior, not recommended
+
+terraform import resource_address ID
+
+When to use:
+- need to work with existing resources
+- not allowed to create new resources
+- not in control of creation process
+
+Terrafrom configuration block
+- special configuration block for controlling Terraform's own behavior
+- only allows constant values, named resources and variables not allowed
+- configuring backend for storing state files
+- specifying a required Terraform version
+- Specifying a required Terraform Provider version and its requirements
+- enable and test Terraform experimental features
+- passing metadata to providers
