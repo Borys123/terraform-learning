@@ -377,3 +377,110 @@ Terrafrom configuration block
 - Specifying a required Terraform Provider version and its requirements
 - enable and test Terraform experimental features
 - passing metadata to providers
+
+Workspaces
+- alternate state files within the same working directory
+- starts with a single "default" workspace that cannot be deleted
+- test using a parallel, distinct copy of infrastructure
+- it can be modeled against branches in version control
+- good for sharing resources, collaboration
+- access to ${terraform.workspace}
+
+terraform workspace new <WORKSPACE>
+terraform workspace select <WORKSPACE>
+
+resource "aws_instance" "example" {
+  count = terraform.workspace == "default" ? 5 : 1
+  # if ws default, spin up 5, if not then 1
+}
+resource "aws_s3_bucket" "bucket" {
+  bucket = "mybucket-${terraform.workspace}"
+}
+
+Debugging Terraform
+
+TF_LOG = env var for enabling verbose logging. By default sends to stderr
+Can be set to: TRACE, DEBUG, INFO, WARN, ERROR
+TRACE- most verbose and reliable
+TF_LOG_PATH - log to file (path)
+By default disabled
+
+Sentinel
+- provided with Enterprise version
+- enforces policies on code
+- own language - Sentinel language
+- designed to be approached by non-programmers
+- sandboxing - guardrails for automation (eg. stop dev user from deploying to prod)
+- codifies security enfrorcement
+- can be version controlled
+- standardise testing and automation of security
+- for enforcing CIS security standards on AWS accounts
+- check to make sure only certain instances can be spun up
+- ensure no security group allows port 22
+
+import "tfplan"
+
+main = rule {
+  all tfplan.resources.aws_instance as _, instances {
+    all instances as _, r {
+      (length(r.applied.tags) else 0) > 0
+    }
+  }
+}
+
+Vault Provider
+
+- secrets management software
+- store sensitive data securely, provide short term credentials to users
+- dynamically provisions credentials and rotates them
+- encrypts sensitive data in transit and at rest, fine grained access control to secrets using ACLs
+- usernames, passwords, db credentials, api tokens, tls certs
+- prevent credentials sprawl
+- centrally manage access to all secrets and integrate them easily with tf and cloud vendors
+
+Deploy to AWS and use vault
+1. Vault admin stores long lived creds in vault, configures permissions for temporary creds when generated
+2. Terraform operator integrates vault-tf with the vault provider, then terraform apply
+3. Terraform reaches to Vault for temp credentials
+4. Vault return temporary, short lived credentials
+5. Terraform applies stuff, after set time creds are deleted
+
+Benefits:
+- Devs/users don't need long term creds on machines, less attack vectors
+- Creds injected to terraform at runtime
+- Fine-grained ACLs
+- Main takeaway - both temp credentials, as well encryption of data at rest and transit
+
+Terraform Registry
+- a repository of publicly available Terraform providers and modules
+- you can publish and share your own modules
+- you can collaborate with other contributors to make changes to providers and modules
+- can be directly referenced in Terraform code
+
+Terraform Cloud Workspaces
+- same as normal workspaces, but hosted in the cloud
+- direcotires hosted in Terraform Cloud
+- stores old version of state files
+- mainains a record of all execution activity (auditing, investigating)
+- all terrraform commands executed on "managed" Terraform Cloud VMs
+
+Terraform Cloud Workspaces vs OSS Workspaces
+
+OSS:
+- stores alternate state files in the same working directory
+- (terraform.tfstate.d keeps states of different workspaces)
+
+Component                 Workspace                                                Cloud Workspace
+TF Configuration           On disk                               Linked VC repository or uploaded by API/CLI calls
+Variable Values      As .tfvars, CLI args, in shell env                       In workspace (TF Cloud)
+TFState              On disk/remote backend                                   In workspace (TF Cloud)
+Creds/Secrets        In shell env or entered at prompts               In workspace (TF Cloud), as sensitive values
+
+TF Cloud (summary)
+- Remote Terraform execution
+- Workspace based org model
+- VC integration (GitHub, Bitbucket etc)
+- Remote state management and CLI integration
+- Private Terraform Module registry
+- Cost estimation (AWS, Azure, GCP) and Sentinel integration features
+- Collaboration (API based worklflows, version control, trigger-based deployments)
