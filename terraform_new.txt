@@ -68,78 +68,15 @@ Terraform Type Constraints (Collections & Structurals)
 
 Primitive - single type value (number, string, bool)
 Complex - multiple types in a single variable (list, tuple, map, object)
-  Collection types allow multiple values of one primitive type to be grouped together list/map/set(type)
-  variable "training" {
-    type = list(string)
-    default = ["ACG", "LA"]
-  }
-  Structural types allow multiple values of different primitive types to be grouped together object/tuple/set(type)
-  variable "instructor" {
-    type = object({
-      name = string
-      age = number
-    })
-  }
-  Any - a placeholder for a primitive type yet to be decided
-  Actual type will be determined at runtime
-  variable "data" {
-    type = list(any)
-    default = [ 1, 42, 7 ]
-  }
-
-Dynamic blocks
-- dynamically constructs repeatable nested configuration blocks inside TF resources
-- support resource, data, provider, provisioner
-- make code look cleaner
-
-resource "aws_security_group" "my-sg" {
-  name = 'my-aws-security-group'
-  vpc_id = aws_vpc.my-vp.id
-  dynamic "ingress" {
-    for_each = var.rules
-    content {
-      from_port = ingress.value["port"]
-      to_port = ingress.value["port"]
-      protocol = ingress.value["proto"]
-      cidr_blocks = ingress.value["cidrs"]
-    }
-  }
-}
-variable "rules" {
-  default = [
-    {
-      port = 80
-      proto = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    },
-    {
-      port = 22
-      proto = "tcp"
-      cidr_blocks = ["1.2.3.4/32"]
-    }
-  ]
-}
-
-Dynamic blocks expect a complex variable type to iterate over
-Act like a for loop and output a nested block for each element in your variable
-- Don't overuse, complex stuff
-- Only use to hide detail to make interface cleaner eg. im reusable modules
-
-Terraform fmt
-- formats code for readability
-- helps keep code consistent
-- safe to run at any time
+Collection types allow multiple values of one primitive type to be grouped together list/map/set(type)
+Structural types allow multiple values of different primitive types to be grouped together object/tuple/set(type)
+Any - a placeholder for a primitive type yet to be decided
 
 Terraform taint
 - taints a resource, forcing it to be deleted and recreated
 - modifies the state file, which causes the recreation workflow
 - mind that tainting a resource may cause other resources to be modified
 terraform taint RESOURCE_ADDRESS
-
-Use when:
-- to cause provisioners to run (they only run on create/destroy)
-- replace misbehaving resources forcefully
-- mimic side effects of recreation
 
 Terraform import
 - maps existing resources to Terraform using an ID
@@ -167,14 +104,6 @@ Workspaces
 
 terraform workspace new <WORKSPACE>
 terraform workspace select <WORKSPACE>
-
-resource "aws_instance" "example" {
-  count = terraform.workspace == "default" ? 5 : 1
-  # if ws default, spin up 5, if not then 1
-}
-resource "aws_s3_bucket" "bucket" {
-  bucket = "mybucket-${terraform.workspace}"
-}
 
 Debugging Terraform
 
