@@ -51,7 +51,6 @@ Functions
 User-defined functions are not allowed
 
 Built-in functions:
-
 - file
 - max
 - flatten
@@ -175,3 +174,97 @@ TF Cloud (summary)
 - Private Terraform Module registry
 - Cost estimation (AWS, Azure, GCP) and Sentinel integration features
 - Collaboration (API based worklflows, version control, trigger-based deployments)
+
+Generic meta-arguments for provider: Profile, Region
+
+Modules can be fetched with extensions: zip, tar.gz, tar.xz
+
+Config under terraform_remote_state
+
+terraform output <output_name>
+
+Sources for modules: local path, tf registry, github, bitbucket, generic git/mercurial, http url, s3, gcs bucket, modules in package subdirectories
+
+Can set "provider" inside a resource, when provider has an alias (eg. aws.frankfurt)
+
+terraform logout, terraform login for both enterprise and cloud
+
+TF_DATA_DIR - changes path where TF keeps its per-working-directort data (eg. remote backend config)
+
+terraform replace
+
+Count meta-argument accepts a whole number and creates that many instances of resource or module
+
+Remote-exec provisioner uses SSH and WinRM
+
+terraform force-unlock LOCK_ID
+
+Standard (only stores) and Enhanced (stores and executes) backend. Local and Cloud are enhanced.
+
+terraform apply --auto-approve
+
+terraform console
+
+terraform refresh - refreshes state
+
+Terraform standard backend doesn't support remote management/operations
+
+null_resource + local_exec
+
+HCL and JSON
+
+Current and desired state should be in the same state all the time? No
+
+Features exclusive for TF Ent and Cloud Business: self-service infra, audit logging, SAML/SSO
+
+Supported backend types: s3, terraform enterprise, artifactory, consul, terraform cloud, local
+
+Supported OS: Widnows, Linux, MacOS, Solaris
+
+Good functions: join, format, replace, NON EXISTENT: tostring
+
+TF Enterprise = PostgreSQL backend
+
+Plugins are in .terraform/plugins in init dir
+
+How to make module valid for publishing: GitHub public repo, PCI/HIPPA compliant, repo named terraform-<PROIVDER>-<NAME>
+
+Create provider dependency by: explicite use of a provider block, existence of any resource refering to a provider in current state, use of any resource belonging to a particular provider in resource/data block
+
+Parallelism: 10
+
+source = "git::https://example.com/my_test_module.git?ref=1.0.4"
+
+Env vars in format TF_VAR_<SOMETHING>
+
+TF Cloud supported providers: Azure DevOps, GH Enterprise, GH, Bitbucket Cloud, !NOT! CVS VC
+
+Install modules: terraform init or terraform get
+
+TF install without installer or upgrades = air-gapped
+
+~> 1.2.0 means 1.2.X
+
+zipmap(["a", "b"], [1, 2]) = {"a" = 1 "b" = 2}
+
+Terraform is an immutable, declarative, IaC provisioning language based or HCL or optionally JSON
+
+lookup ({a = "hello", b="goodbye",}, "c", "what?") = what?
+
+When using providers that require retrieval of data, it happens during plan
+
+State in OSS resides in terraform.tfstate.d
+
+When commiting, ignore terraform.tfstate and terraform.tfvars
+
+Features ONLY in Enterprise: Locally hosted installation, private network connectivity. NOT clustering, audit logs, saml/sso
+
+Before importing, update the config file to include new resources
+
+Downside to using vault (eg. reading secrets from it): secrets are persisted to tf state and plans
+
+State file: storing state remotely is more secure, tf state can contain sensitive data, protect it, locally it's plain txt, tf cloud always encrypts state at rest
+
+Configure backend not in code: command line key/value pairs, interactively on cli, use -backend-config=PATH-TO-FILE
+
+Benefits of modules published via tf registry: auto-generated docs, browsing version history, show examples and readmes, support versioning, NOT support from any code repo
