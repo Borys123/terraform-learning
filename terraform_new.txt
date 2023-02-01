@@ -1,0 +1,248 @@
+terraform init
+  - Downloads modules/plugins
+  - Sets up state file
+
+terraform plan
+  - does not deploy anything. Read-only
+  - allows users to review the action plan before execution
+  - uses authentication credentials
+
+terraform apply
+  - updates the state file (state tracking mechanism) - terraform.tfstate
+
+Default TF behaviors:
+- executes code in .tf files
+- initially, looks for providers in the registry, but can also locally
+- refreshed prior to any modification
+- acts as cache for res attrs
+
+Terraform State - Resource tracking:
+- json data
+- terraform.tfstate locally
+
+sensitive = true (default false)
+
+Base types:
+- string
+- number
+- boll
+
+Complex types:
+- list
+- set
+- map
+- object
+- tuple
+
+Outputs:
+- are shown on the shell after terraform apply
+
+Common state commands:
+terraform state list - list all resources tracked by state file
+terraform state rm - delete a resource from state file
+terraform state show - show details of a tracked resource
+
+Modules can be downloaded/referenced from:
+- Terraform Public Registry
+- A Private registry
+- Your Local System
+
+Functions
+User-defined functions are not allowed
+
+Built-in functions:
+
+- file
+- max
+- flatten
+
+Terraform console (interactive cli)
+max(5,3,1,4,5) -> 5
+timestamp() -> UTC timestamp
+join("_", ["acloud","guru"]) -> acloud_guru
+contains(["acloud", "guru", 1, 2, 3], "guru") -> true
+contains(["acloud", "guru", 1, 2, 3], "5") -> false
+
+Terraform Type Constraints (Collections & Structurals)
+- Type constraints control the type of variable values
+
+Primitive - single type value (number, string, bool)
+Complex - multiple types in a single variable (list, tuple, map, object)
+  Collection types allow multiple values of one primitive type to be grouped together list/map/set(type)
+  variable "training" {
+    type = list(string)
+    default = ["ACG", "LA"]
+  }
+  Structural types allow multiple values of different primitive types to be grouped together object/tuple/set(type)
+  variable "instructor" {
+    type = object({
+      name = string
+      age = number
+    })
+  }
+  Any - a placeholder for a primitive type yet to be decided
+  Actual type will be determined at runtime
+  variable "data" {
+    type = list(any)
+    default = [ 1, 42, 7 ]
+  }
+
+Dynamic blocks
+- dynamically constructs repeatable nested configuration blocks inside TF resources
+- support resource, data, provider, provisioner
+- make code look cleaner
+
+resource "aws_security_group" "my-sg" {
+  name = 'my-aws-security-group'
+  vpc_id = aws_vpc.my-vp.id
+  dynamic "ingress" {
+    for_each = var.rules
+    content {
+      from_port = ingress.value["port"]
+      to_port = ingress.value["port"]
+      protocol = ingress.value["proto"]
+      cidr_blocks = ingress.value["cidrs"]
+    }
+  }
+}
+variable "rules" {
+  default = [
+    {
+      port = 80
+      proto = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    },
+    {
+      port = 22
+      proto = "tcp"
+      cidr_blocks = ["1.2.3.4/32"]
+    }
+  ]
+}
+
+Dynamic blocks expect a complex variable type to iterate over
+Act like a for loop and output a nested block for each element in your variable
+- Don't overuse, complex stuff
+- Only use to hide detail to make interface cleaner eg. im reusable modules
+
+Terraform fmt
+- formats code for readability
+- helps keep code consistent
+- safe to run at any time
+
+Terraform taint
+- taints a resource, forcing it to be deleted and recreated
+- modifies the state file, which causes the recreation workflow
+- mind that tainting a resource may cause other resources to be modified
+terraform taint RESOURCE_ADDRESS
+
+Use when:
+- to cause provisioners to run (they only run on create/destroy)
+- replace misbehaving resources forcefully
+- mimic side effects of recreation
+
+Terraform import
+- maps existing resources to Terraform using an ID
+- ID is dependent on the underlying vendor
+- importing the same reosource to multiple Terraform resources can cause unknown behavior, not recommended
+
+terraform import resource_address ID
+
+Terrafrom configuration block
+- special configuration block for controlling Terraform's own behavior
+- only allows constant values, named resources and variables not allowed
+- configuring backend for storing state files
+- specifying a required Terraform version
+- Specifying a required Terraform Provider version and its requirements
+- enable and test Terraform experimental features
+- passing metadata to providers
+
+Workspaces
+- alternate state files within the same working directory
+- starts with a single "default" workspace that cannot be deleted
+- test using a parallel, distinct copy of infrastructure
+- it can be modeled against branches in version control
+- good for sharing resources, collaboration
+- access to ${terraform.workspace}
+
+terraform workspace new <WORKSPACE>
+terraform workspace select <WORKSPACE>
+
+resource "aws_instance" "example" {
+  count = terraform.workspace == "default" ? 5 : 1
+  # if ws default, spin up 5, if not then 1
+}
+resource "aws_s3_bucket" "bucket" {
+  bucket = "mybucket-${terraform.workspace}"
+}
+
+Debugging Terraform
+
+TF_LOG = env var for enabling verbose logging. By default sends to stderr
+Can be set to: TRACE, DEBUG, INFO, WARN, ERROR
+TRACE- most verbose and reliable
+TF_LOG_PATH - log to file (path)
+By default disabled
+
+Sentinel
+- provided with Enterprise version
+- enforces policies on code
+- own language - Sentinel language
+- designed to be approached by non-programmers
+- sandboxing - guardrails for automation (eg. stop dev user from deploying to prod)
+- codifies security enfrorcement
+- can be version controlled
+- standardise testing and automation of security
+- for enforcing CIS security standards on AWS accounts
+- check to make sure only certain instances can be spun up
+- ensure no security group allows port 22
+
+Vault Provider
+
+- secrets management software
+- store sensitive data securely, provide short term credentials to users
+- dynamically provisions credentials and rotates them
+- encrypts sensitive data in transit and at rest, fine grained access control to secrets using ACLs
+- usernames, passwords, db credentials, api tokens, tls certs
+- prevent credentials sprawl
+- centrally manage access to all secrets and integrate them easily with tf and cloud vendors
+
+Benefits:
+- Devs/users don't need long term creds on machines, less attack vectors
+- Creds injected to terraform at runtime
+- Fine-grained ACLs
+- Main takeaway - both temp credentials, as well encryption of data at rest and transit
+
+Terraform Registry
+- a repository of publicly available Terraform providers and modules
+- you can publish and share your own modules
+- you can collaborate with other contributors to make changes to providers and modules
+- can be directly referenced in Terraform code
+
+Terraform Cloud Workspaces
+- same as normal workspaces, but hosted in the cloud
+- direcotires hosted in Terraform Cloud
+- stores old version of state files
+- mainains a record of all execution activity (auditing, investigating)
+- all terrraform commands executed on "managed" Terraform Cloud VMs
+
+Terraform Cloud Workspaces vs OSS Workspaces
+
+OSS:
+- stores alternate state files in the same working directory
+- (terraform.tfstate.d keeps states of different workspaces)
+
+Component                 Workspace                                                Cloud Workspace
+TF Configuration           On disk                               Linked VC repository or uploaded by API/CLI calls
+Variable Values      As .tfvars, CLI args, in shell env                       In workspace (TF Cloud)
+TFState              On disk/remote backend                                   In workspace (TF Cloud)
+Creds/Secrets        In shell env or entered at prompts               In workspace (TF Cloud), as sensitive values
+
+TF Cloud (summary)
+- Remote Terraform execution
+- Workspace based org model
+- VC integration (GitHub, Bitbucket etc)
+- Remote state management and CLI integration
+- Private Terraform Module registry
+- Cost estimation (AWS, Azure, GCP) and Sentinel integration features
+- Collaboration (API based worklflows, version control, trigger-based deployments)
