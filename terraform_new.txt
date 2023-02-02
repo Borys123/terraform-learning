@@ -268,3 +268,31 @@ State file: storing state remotely is more secure, tf state can contain sensitiv
 Configure backend not in code: command line key/value pairs, interactively on cli, use -backend-config=PATH-TO-FILE
 
 Benefits of modules published via tf registry: auto-generated docs, browsing version history, show examples and readmes, support versioning, NOT support from any code repo
+
+Gitignore:
+- .terraform
+- terraform.tfvars
+- terraform/tfstate
+- crash.log
+
+Remote backends:
+- artifactory
+- azurerm
+- consul
+- cos
+- etcd
+- gcs
+- http
+- kuberentes
+- manta
+- oss
+- pg
+- s3
+- swift
+
+terraform state: list/mv/pull/push/rm/show
+
+TF Cloud: access controls, private registry, policy controls
+
+Standard backend: state storage and locking
+Enhanced backend: + remote management
