@@ -296,3 +296,26 @@ TF Cloud: access controls, private registry, policy controls
 
 Standard backend: state storage and locking
 Enhanced backend: + remote management
+
+TF CLOUD:
+
+Free:
+- state management
+- remote operations
+- private module registry
+
+Team:
+- team management
+- sentinel
+- run tasks
+- additional concurrency (2)
+- "bronze" support
+- cost estimation
+
+Business (Enterprise):
+- drift detection
+- SSO (Azure AD, Okta, SAML)
+- audit logs
+- self-hosted agents (not in Enterprise)
+- custom concurrency
+- bronze silver or gold support
